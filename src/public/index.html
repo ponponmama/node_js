@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>リアルタイムチャット</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    const socket = io();
+
+    let userId; // userIdをグローバル変数として宣言
+
+    socket.on('connect', () => {
+      userId = socket.id; // ソケット接続完了後にuserIdを設定
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const messageForm = document.getElementById('message-form');
+      const messageInput = document.getElementById('message-input');
+      const messageContainer = document.getElementById('messages');
+
+      messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = messageInput.value;
+        if (!userId) {
+          console.error('ユーザーIDが未設定です。');
+          return; // userIdが未設定の場合は送信を中止
+        }
+        socket.emit('chat message', { msg: message, id: userId });
+        messageInput.value = '';
+        addMessage(message, 'sender');
+      });
+
+      socket.on('chat message', (data) => {
+        addMessage(data.msg, 'receiver');
+      });
+
+      function addMessage(msg, type) {
+        const item = document.createElement('li');
+        item.textContent = msg;
+        item.className = type; // 'sender' または 'receiver'
+        messageContainer.appendChild(item);
+      }
+    });
+
+    socket.on('chat error', (errorMessage) => {
+      console.error('サーバーエラー:', errorMessage);
+      alert('エラーが発生しました: ' + errorMessage); // ユーザーにエラーを通知
+    });
+  </script>
+</head>
+
+<body>
+  <h1>リアルタイムチャット</h1>
+  <ul id="messages"></ul>
+  <form id="message-form">
+    <input id="message-input" autocomplete="off"><button>送信</button>
+  </form>
+</body>
+
+</html>
